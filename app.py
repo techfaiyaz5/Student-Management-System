@@ -5,7 +5,7 @@ import time
 
 app = Flask(__name__)
 
-# Database connection function with wait logic
+# Database connection function with retry logic
 def get_db_connection():
     for i in range(10):
         try:
@@ -17,47 +17,70 @@ def get_db_connection():
             )
             return conn
         except:
-            print("Database not ready, retrying...")
-            time.sleep(3)
+            print("Database not ready, retrying in 2 seconds...")
+            time.sleep(2)
     return None
 
-# Simple HTML Interface for Entry
-HTML_TEMPLATE = '''
+# HTML Template with Form and Table
+HTML_PAGE = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Student Management</title>
+    <title>Student Management System</title>
     <style>
-        body { font-family: Arial; margin: 40px; }
-        .form-group { margin-bottom: 15px; }
-        input { padding: 8px; width: 250px; }
-        button { padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; }
+        body { font-family: Arial; margin: 30px; background-color: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        button { padding: 10px 15px; background: #28a745; color: white; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>Add New Student</h2>
-    <form method="POST" action="/add">
-        <div class="form-group">
-            <label>Name:</label><br>
-            <input type="text" name="name" required>
-        </div>
-        <div class="form-group">
-            <label>Roll No:</label><br>
-            <input type="text" name="roll_no" required>
-        </div>
-        <div class="form-group">
-            <label>Address:</label><br>
-            <input type="text" name="address" required>
-        </div>
-        <button type="submit">Save Student</button>
-    </form>
+    <div class="container">
+        <h2>Add New Student</h2>
+        <form method="POST" action="/add">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="text" name="roll_no" placeholder="Roll Number" required>
+            <input type="text" name="address" placeholder="Address" required>
+            <button type="submit">Add Student</button>
+        </form>
+
+        <hr>
+
+        <h2>Stored Student Records</h2>
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Roll No</th>
+                <th>Address</th>
+            </tr>
+            {% for student in students %}
+            <tr>
+                <td>{{ student[0] }}</td>
+                <td>{{ student[1] }}</td>
+                <td>{{ student[2] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 </body>
 </html>
 '''
 
 @app.route('/')
 def index():
-    return render_template_string(HTML_TEMPLATE)
+    conn = get_db_connection()
+    students_list = []
+    if conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name, roll_no, address FROM students")
+        students_list = cursor.fetchall()
+        cursor.close()
+        conn.close()
+    
+    return render_template_string(HTML_PAGE, students=students_list)
 
 @app.route('/add', methods=['POST'])
 def add_student():
@@ -73,8 +96,9 @@ def add_student():
         conn.commit()
         cursor.close()
         conn.close()
-        return f"<h3>Success! {name} (Roll: {roll_no}) has been saved.</h3> <a href='/'>Add Another</a>"
-    return "<h3>Error: Could not connect to Database.</h3>"
+    
+    # Data add karne ke baad wapas home page par bhej dega
+    return "<script>window.location.href='/';</script>"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
