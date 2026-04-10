@@ -21,7 +21,7 @@ def get_db_connection():
             time.sleep(2)
     return None
 
-# HTML Template with Form and Table
+# Updated HTML Template with Action Column and Delete Button
 HTML_PAGE = '''
 <!DOCTYPE html>
 <html>
@@ -34,7 +34,16 @@ HTML_PAGE = '''
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         th { background-color: #007bff; color: white; }
         input { padding: 8px; margin: 5px; width: 200px; }
-        button { padding: 10px 15px; background: #28a745; color: white; border: none; cursor: pointer; }
+        button { padding: 10px 15px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        .btn-delete { 
+            background: #dc3545; 
+            color: white; 
+            padding: 6px 12px; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            font-size: 13px;
+        }
+        .btn-delete:hover { background: #c82333; }
     </style>
 </head>
 <body>
@@ -55,12 +64,16 @@ HTML_PAGE = '''
                 <th>Name</th>
                 <th>Roll No</th>
                 <th>Address</th>
+                <th>Action</th>
             </tr>
             {% for student in students %}
             <tr>
                 <td>{{ student[0] }}</td>
                 <td>{{ student[1] }}</td>
                 <td>{{ student[2] }}</td>
+                <td>
+                    <a href="/delete/{{ student[1] }}" class="btn-delete" onclick="return confirm('Kya aap sach mein is record ko delete karna chahte hain?')">Delete</a>
+                </td>
             </tr>
             {% endfor %}
         </table>
@@ -97,7 +110,21 @@ def add_student():
         cursor.close()
         conn.close()
     
-    # Data add karne ke baad wapas home page par bhej dega
+    return "<script>window.location.href='/';</script>"
+
+# --- NEW DELETE ROUTE ---
+@app.route('/delete/<roll_no>')
+def delete_student(roll_no):
+    conn = get_db_connection()
+    if conn:
+        cursor = conn.cursor()
+        # SQL Query to delete based on roll number
+        cursor.execute("DELETE FROM students WHERE roll_no = %s", (roll_no,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    
+    # Page ko refresh karne ke liye redirect
     return "<script>window.location.href='/';</script>"
 
 if __name__ == '__main__':
