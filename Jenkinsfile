@@ -43,8 +43,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
                     script {
                         // 1. Purane container ko hatana (agar koi chal raha ho)
-                        sh "docker stop student-app-container || true"
-                        sh "docker rm student-app-container || true"
+                        sh "docker-compose down || true"
+                        sh "docker-compose up -d|| true"
                         
                         // 2. Naya container start karna
                         // Hum wahi image use kar rahe hain jo abhi push ki hai
