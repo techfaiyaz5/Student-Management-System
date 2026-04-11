@@ -48,10 +48,10 @@ pipeline {
                         
                         // 2. Naya container start karna
                         // Hum wahi image use kar rahe hain jo abhi push ki hai
-                        sh "docker run -d --name student-app-container -p 5000:5000 \$DOCKER_USER/student-app:latest"
+                        sh "docker run -d --name student-app-container -p 9000:8080 \$DOCKER_USER/student-app:latest"
                     }
                 }
-                echo 'SUCCESS! Page is live at http://localhost:5000'
+                echo 'SUCCESS! Page is live at http://localhost:9000'
             }
         }
     }
