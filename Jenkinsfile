@@ -29,7 +29,7 @@ pipeline {
             steps {
                 echo 'Pushing Image to Cloud...'
                 // 'docker-hub-id' wahi ID honi chahiye jo aapne Jenkins Credentials mein banayi hai
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-id', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                     sh "docker tag student-app:latest \$DOCKER_USER/student-app:latest"
                     sh "docker push \$DOCKER_USER/student-app:latest"
