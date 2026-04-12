@@ -34,16 +34,21 @@ pipeline {
         }
 
         // --- UPDATED STEP 5: PURE DOCKER COMPOSE ---
-        stage('Step 5: Auto Run Application') {
+        stage('Step 5: Step 5: Deploy to Kubernetes') {
             steps {
-                echo 'Starting App and Database with Docker Compose...'
+                echo 'Deploying to Minikube Cluster...'
                 script {
-                    // 1. Purane saare containers aur networks ko clean karna
-                    sh "docker-compose down || true"
+                   // 1. Pehle Database apply karein
+                    sh "kubectl apply -f k8s/db-deployment.yaml"
                     
-                    // 2. Sirf Docker Compose chalana (Ye DB aur App dono ko background mein start kar dega)
-                    // Ye automatically 9000 port use karega jo aapki file mein hai
-                    sh "docker-compose up -d"
+                    // 2. Phir App apply karein
+                    sh "kubectl apply -f k8s/app-deployment.yaml"
+                    
+                    // 3. Rollout Restart (Nayi image force karne ke liye)
+                    sh "kubectl rollout restart deployment student-app"
+                    
+                    // 4. Status Check
+                    sh "kubectl rollout status deployment student-app"
                 }
                 echo 'SUCCESS! Your project is live at http://localhost:9000'
             }

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: student-app
+spec:
+  replicas: 2 # 2 Pods hamesha chalte rahenge (Auto-healing)
+  selector:
+    matchLabels:
+      app: student-app
+  template:
+    metadata:
+      labels:
+        app: student-app
+    spec:
+      containers:
+      - name: student-app
+        image: techfaiyaz5/student-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: student-app-service
+spec:
+  type: NodePort
+  selector:
+    app: student-app
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30001 # http://localhost:30001 par check karenge

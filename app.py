@@ -10,7 +10,7 @@ def get_db_connection():
     for i in range(10):
         try:
             conn = mysql.connector.connect(
-                host=os.getenv('DB_HOST', 'db'),
+                host=os.getenv('DB_HOST', 'db-service'),
                 user=os.getenv('DB_USER', 'root'),
                 password=os.getenv('DB_PASSWORD', 'password'),
                 database=os.getenv('DB_NAME', 'student_db')
