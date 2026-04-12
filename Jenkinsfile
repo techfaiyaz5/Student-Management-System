@@ -10,8 +10,10 @@ pipeline {
 
         stage('Step 2: Install Requirements') {
             steps {
-                echo 'Installing Project Dependencies...'
-                sh 'pip install -r requirements.txt --user || echo "Requirements already satisfied"'
+                steps {
+                    echo 'Installing Project Dependencies...'
+                    sh 'pip install -r requirements.txt --user || echo "Requirements already satisfied"'
+                }
             }
         }
 
@@ -33,25 +35,30 @@ pipeline {
             }
         }
 
-        stage('Step 5: Deploy to Kubernetes (Minikube)') {
+        stage('Step 5: Deploy & Fix Permanent Port') {
             steps {
                 echo 'Starting Automated K8s Deployment...'
                 script {
-                    // Sabse pehle purane docker-compose ko down kar dete hain agar chal raha ho
-                    // sh "docker-compose down || true"
+                    // Minikube start check
+                    sh "minikube status || minikube start"
 
-                    // Kubernetes Deployment - Humne validation off kar di hai taki auth error na aaye
+                    // Apply K8s Manifests
                     sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                     sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                     
-                    // App ko restart karna taki naya Docker Hub image pull ho jaye
-                    sh "kubectl rollout restart deployment student-app"
+                    // --- STATIC PORT JUGAD (Tunnel in Background) ---
+                    // 'nohup' use kiya hai taaki Jenkins ka step khatam ho jaye par tunnel piche chalta rahe
+                    sh "nohup minikube tunnel > tunnel.log 2>&1 &"
                     
-                    // Status confirm karna
+                    // Restart to pull latest image
+                    sh "kubectl rollout restart deployment student-app"
                     sh "kubectl rollout status deployment student-app"
+
+                    echo "--------------------------------------------------------"
+                    echo "BHAI, AB MANUAAL KAAM KHATAM!"
+                    echo "AAPKA APP HAMESHA YAHAN CHALEGA: http://localhost:30001"
+                    echo "--------------------------------------------------------"
                 }
-                echo 'SUCCESS! Your project is being managed by Kubernetes.'
-                echo 'Check app status using: kubectl get pods'
             }
         }
     }
