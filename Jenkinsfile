@@ -33,24 +33,25 @@ pipeline {
             }
         }
 
-        // --- UPDATED STEP 5: PURE DOCKER COMPOSE ---
-        stage('Step 5: Step 5: Deploy to Kubernetes') {
+        stage('Step 5: Deploy to Kubernetes (Minikube)') {
             steps {
-                echo 'Deploying to Minikube Cluster...'
+                echo 'Starting Automated K8s Deployment...'
                 script {
-                   // 1. Pehle Database apply karein
-                    sh "kubectl apply -f k8s/db-deployment.yaml"
+                    // Sabse pehle purane docker-compose ko down kar dete hain agar chal raha ho
+                    // sh "docker-compose down || true"
+
+                    // Kubernetes Deployment - Humne validation off kar di hai taki auth error na aaye
+                    sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
+                    sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                     
-                    // 2. Phir App apply karein
-                    sh "kubectl apply -f k8s/app-deployment.yaml"
-                    
-                    // 3. Rollout Restart (Nayi image force karne ke liye)
+                    // App ko restart karna taki naya Docker Hub image pull ho jaye
                     sh "kubectl rollout restart deployment student-app"
                     
-                    // 4. Status Check
+                    // Status confirm karna
                     sh "kubectl rollout status deployment student-app"
                 }
-                echo 'SUCCESS! Your project is live at http://localhost:9000'
+                echo 'SUCCESS! Your project is being managed by Kubernetes.'
+                echo 'Check app status using: kubectl get pods'
             }
         }
     }
