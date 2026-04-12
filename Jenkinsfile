@@ -10,10 +10,8 @@ pipeline {
 
         stage('Step 2: Install Requirements') {
             steps {
-                steps {
-                    echo 'Installing Project Dependencies...'
-                    sh 'pip install -r requirements.txt --user || echo "Requirements already satisfied"'
-                }
+                echo 'Installing Project Dependencies...'
+                sh 'pip install -r requirements.txt --user || echo "Requirements already satisfied"'
             }
         }
 
@@ -47,7 +45,6 @@ pipeline {
                     sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                     
                     // --- STATIC PORT JUGAD (Tunnel in Background) ---
-                    // 'nohup' use kiya hai taaki Jenkins ka step khatam ho jaye par tunnel piche chalta rahe
                     sh "nohup minikube tunnel > tunnel.log 2>&1 &"
                     
                     // Restart to pull latest image
