@@ -37,12 +37,15 @@ pipeline {
             steps {
                 script {
                     echo 'Ensuring Minikube is up and running...'
-                    // Agar minikube delete bhi ho gaya hai, toh ye use fresh start karega
-                    sh "minikube status || minikube start --driver=docker"
-                    
-                    echo 'Applying K8s Configurations...'
-                    sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
-                    sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
+                   // Hum Jenkins ko 'faiyyaz' user ka environment de rahe hain
+                    withEnv(["HOME=/home/faiyyaz"]) {
+                        // Agar status fail hota hai toh fresh start karega
+                        sh "minikube status || minikube start --driver=docker"
+                        
+                        echo 'Applying K8s Configurations...'
+                        sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
+                        sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
+                    }
                 }
             }
         }
