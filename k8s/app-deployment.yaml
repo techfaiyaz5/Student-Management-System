@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: student-app
 spec:
-  replicas: 2 # 2 Pods hamesha chalte rahenge (Auto-healing)
+  replicas: 2 
   selector:
     matchLabels:
       app: student-app
@@ -24,10 +24,11 @@ kind: Service
 metadata:
   name: student-app-service
 spec:
-  type: NodePort
+  type: LoadBalancer  # <--- NodePort se badal kar LoadBalancer kar diya
   selector:
     app: student-app
   ports:
-    - port: 80
-      targetPort: 8080
-      nodePort: 30001 # http://localhost:30001 par check karenge
+    - protocol: TCP
+      port: 80         # Bahar se access ke liye port
+      targetPort: 8080 # Tumhari Flask app ka port (Logs ke hisaab se)
+      nodePort: 30001  # Static port browser ke liye
