@@ -36,9 +36,9 @@ pipeline {
         stage('Step 4: Infrastructure Setup') {
             steps {
                 script {
-                    echo 'Ensuring Minikube is up and running...'
+                    echo 'Ensuring Minikube & Kubeconfig are ready...'
                    // Hum Jenkins ko 'faiyyaz' user ka environment de rahe hain
-                    withEnv(["HOME=/home/faiyyaz"]) {
+                   withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
                         // Agar status fail hota hai toh fresh start karega
                         sh "minikube status || minikube start --driver=docker"
                         
