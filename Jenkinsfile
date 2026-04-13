@@ -2,7 +2,6 @@ pipeline {
     agent any 
 
     environment {
-        // Tumhara Docker Hub Username yahan set kar lo
         DOCKER_HUB_USER = "faiyyazkhan" 
         APP_NAME = "student-app"
     }
@@ -17,7 +16,6 @@ pipeline {
         stage('Step 2: Build & Cache Image') {
             steps {
                 echo 'Building Image with Caching...'
-                // Docker apne aap caching use karega agar layers change nahi hui hain
                 sh "docker build -t ${APP_NAME}:latest ."
             }
         }
@@ -37,9 +35,8 @@ pipeline {
             steps {
                 script {
                     echo 'Ensuring Minikube & Kubeconfig are ready...'
-                   // Hum Jenkins ko 'faiyyaz' user ka environment de rahe hain
-                   withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
-                        // Agar status fail hota hai toh fresh start karega
+                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
+                        // Agar stop hai to start karega
                         sh "minikube status || minikube start --driver=docker"
                         
                         echo 'Applying K8s Configurations...'
@@ -53,22 +50,24 @@ pipeline {
         stage('Step 5: Deployment & Auto-Tunnel') {
             steps {
                 script {
-                    // 1. Pehle environment set karo (Taki permission error na aaye)
+                    echo 'Setting up tunnel and refreshing pods...'
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config"]) {
                         
-                        echo 'Starting Tunnel in Background...'
+                        // Tunnel reset logic
                         sh "pkill -f 'minikube tunnel' || true"
                         sh "nohup minikube tunnel > tunnel.log 2>&1 &"
                         
-                        echo 'Force Refreshing App...'
-                        sh "kubectl rollout restart deployment student-app"
-                        sh "kubectl rollout status deployment student-app"
+                        // Force update with latest image from hub
+                        sh "kubectl rollout restart deployment ${APP_NAME}"
+                        sh "kubectl rollout status deployment ${APP_NAME}"
 
-                        // 2. Ye message script block ke ANDAR hona chahiye
                         echo "--------------------------------------------------------"
-                        echo "BHAI, AB TO CHALNA HI PADEGA: http://localhost:30001"
+                        echo "MUBARAK HO! SAB KUCH AUTO-SET HO GAYA HAI."
+                        echo "APP LINK: http://localhost:30001"
                         echo "--------------------------------------------------------"
-                    } // withEnv ka bracket band
-                } // script ka bracket band
-            } // steps ka bracket band
-        } /
+                    }
+                }
+            }
+        }
+    }
+}
