@@ -2,7 +2,7 @@ pipeline {
     agent any 
 
     environment {
-        // Tumhare Docker Hub ka username yahan dalo
+        // Tumhare Docker Hub ka username
         DOCKER_HUB_USER = "techfaiyaz5" 
         APP_NAME = "student-app"
         // Universal Port jo humne fix kiya hai
@@ -33,6 +33,7 @@ pipeline {
             steps {
                 echo 'Pushing fresh image to Cloud...'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh "docker build -t ${DOCKER_HUB_USER}/${APP_NAME}:latest ."
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                     sh "docker tag ${APP_NAME}:latest \$DOCKER_USER/${APP_NAME}:latest"
                     sh "docker push \$DOCKER_USER/${APP_NAME}:latest"
@@ -59,22 +60,32 @@ pipeline {
             }
         }
 
-        stage('Step 5: Universal Port Access') {
+        stage('Step 5: Local-Only Tunnel & Port Access') {
             steps {
                 script {
-                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config"]) {
+                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
                         
                         // Check: Kya hum Local (Minikube) par hain?
                         def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
                         
                         if (context.contains("minikube")) {
-                            echo "Local Detected: Automating Port ${FIXED_PORT}..."
-                            // Pehle se chal rahe port connection ko kill karo
+                            echo "--- LOCAL DETECTED: Automating Tunnel & Port ${FIXED_PORT} ---"
+                            
+                            // 1. Purane tunnel aur port connection ko kill karo
+                            sh "pkill -f 'minikube tunnel' || true"
                             sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
-                            // Background mein tunnel/port-forward setup
+                            
+                            // 2. Start Minikube Tunnel in background (LoadBalancer Support ke liye)
+                            echo "Starting Minikube Tunnel..."
+                            sh "nohup minikube tunnel > tunnel.log 2>&1 &"
+                            
+                            // 3. Start Port-Forwarding (Direct Access ke liye)
+                            echo "Starting Port-Forwarding to ${FIXED_PORT}..."
                             sh "nohup kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > port-forward.log 2>&1 &"
+                            
+                            echo "SUCCESS: App will be ready at http://localhost:${FIXED_PORT}"
                         } else {
-                            echo "Cloud/AWS Detected: Skipping port-forward (AWS Security Groups handle this)."
+                            echo "--- CLOUD/AWS DETECTED: Skipping Local-only Tunneling ---"
                         }
 
                         sh "kubectl rollout status deployment ${APP_NAME}"

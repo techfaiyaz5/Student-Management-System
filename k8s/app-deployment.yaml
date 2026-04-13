@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: student-app
 spec:
-  replicas: 2 
+  replicas: 2
   selector:
     matchLabels:
       app: student-app
@@ -14,17 +14,17 @@ spec:
     spec:
       containers:
       - name: student-app
-        image: techfaiyaz5/student-app:latest
-        imagePullPolicy: Always  # Har baar fresh image pull karega
+        image: techfaiyaz5/student-app:latest # Tumhari Docker Hub image
+        imagePullPolicy: Always # Har baar fresh image pull karega
         ports:
         - containerPort: 8080
         env:
         - name: DB_HOST
-          value: "db-service"
+          value: "db-service"  # <--- Ye tumhare MySQL service ka naam hai
         - name: DB_USER
           value: "root"
         - name: DB_PASSWORD
-          value: "password" 
+          value: "password"    # Ensure karo ye tumhare MySQL setup wala hi password hai
         - name: DB_NAME
           value: "student_db"
 ---
@@ -38,6 +38,6 @@ spec:
     app: student-app
   ports:
     - protocol: TCP
-      port: 80         
-      targetPort: 8080 
-      nodePort: 30001  # <--- Port hamesha ke liye lock ho gaya
+      port: 80         # Internal port
+      targetPort: 8080 # App ka port
+      nodePort: 30001  # <--- Ye tumhara Universal Fixed Port hai
