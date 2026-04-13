@@ -15,16 +15,16 @@ spec:
       containers:
       - name: student-app
         image: techfaiyaz5/student-app:latest
-        imagePullPolicy: Always
+        imagePullPolicy: Always  # Har baar fresh image pull karega
         ports:
         - containerPort: 8080
         env:
         - name: DB_HOST
-          value: "db-service"  # <--- Yahan pehle 'mysql-db' tha, ise badal kar 'db-service' kar do
+          value: "db-service"
         - name: DB_USER
           value: "root"
         - name: DB_PASSWORD
-          value: "password"    # Ensure karo ye tumhare MySQL setup wala hi password hai
+          value: "password" 
         - name: DB_NAME
           value: "student_db"
 ---
@@ -40,4 +40,4 @@ spec:
     - protocol: TCP
       port: 80         
       targetPort: 8080 
-      nodePort: 30001
+      nodePort: 30001  # <--- Port hamesha ke liye lock ho gaya
