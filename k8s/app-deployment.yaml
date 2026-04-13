@@ -18,17 +18,26 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: "db-service"  # <--- Yahan pehle 'mysql-db' tha, ise badal kar 'db-service' kar do
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "password"    # Ensure karo ye tumhare MySQL setup wala hi password hai
+        - name: DB_NAME
+          value: "student_db"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: student-app-service
 spec:
-  type: LoadBalancer  # <--- NodePort se badal kar LoadBalancer kar diya
+  type: LoadBalancer 
   selector:
     app: student-app
   ports:
     - protocol: TCP
-      port: 80         # Bahar se access ke liye port
-      targetPort: 8080 # Tumhari Flask app ka port (Logs ke hisaab se)
-      nodePort: 30001  # Static port browser ke liye
+      port: 80         
+      targetPort: 8080 
+      nodePort: 30001
