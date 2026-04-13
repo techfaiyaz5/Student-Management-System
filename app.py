@@ -5,23 +5,51 @@ import time
 
 app = Flask(__name__)
 
+# --- AUTOMATION: Database Initialization Function ---
+def init_db():
+    conn = get_db_connection()
+    if conn:
+        try:
+            cursor = conn.cursor()
+            # Agar table nahi hai toh khud bana dega
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS students (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(100),
+                    roll_no VARCHAR(50) UNIQUE,
+                    address VARCHAR(255)
+                )
+            """)
+            conn.commit()
+            print("Database initialized successfully!")
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print(f"Error initializing database: {e}")
+
 # Database connection function with retry logic
 def get_db_connection():
+    # Environment variables se values uthayega (Jo humne deployment.yaml mein di hain)
+    db_host = os.getenv('DB_HOST', 'db-service')
+    db_user = os.getenv('DB_USER', 'root')
+    db_password = os.getenv('DB_PASSWORD', 'password')
+    db_name = os.getenv('DB_NAME', 'student_db')
+
     for i in range(10):
         try:
             conn = mysql.connector.connect(
-                host=os.getenv('DB_HOST', 'db-service'),
-                user=os.getenv('DB_USER', 'root'),
-                password=os.getenv('DB_PASSWORD', 'password'),
-                database=os.getenv('DB_NAME', 'student_db')
+                host=db_host,
+                user=db_user,
+                password=db_password,
+                database=db_name
             )
             return conn
         except:
-            print("Database not ready, retrying in 2 seconds...")
+            print(f"Attempt {i+1}: Database not ready, retrying in 2 seconds...")
             time.sleep(2)
     return None
 
-# Updated HTML Template with Action Column and Delete Button
+# HTML Template (Wahi purana wala jo tumne diya)
 HTML_PAGE = '''
 <!DOCTYPE html>
 <html>
@@ -35,14 +63,7 @@ HTML_PAGE = '''
         th { background-color: #007bff; color: white; }
         input { padding: 8px; margin: 5px; width: 200px; }
         button { padding: 10px 15px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; }
-        .btn-delete { 
-            background: #dc3545; 
-            color: white; 
-            padding: 6px 12px; 
-            text-decoration: none; 
-            border-radius: 4px; 
-            font-size: 13px;
-        }
+        .btn-delete { background: #dc3545; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 13px; }
         .btn-delete:hover { background: #c82333; }
     </style>
 </head>
@@ -55,9 +76,7 @@ HTML_PAGE = '''
             <input type="text" name="address" placeholder="Address" required>
             <button type="submit">Add Student</button>
         </form>
-
         <hr>
-
         <h2>Stored Student Records</h2>
         <table>
             <tr>
@@ -72,7 +91,7 @@ HTML_PAGE = '''
                 <td>{{ student[1] }}</td>
                 <td>{{ student[2] }}</td>
                 <td>
-                    <a href="/delete/{{ student[1] }}" class="btn-delete" onclick="return confirm('Kya aap sach mein is record ko delete karna chahte hain?')">Delete</a>
+                    <a href="/delete/{{ student[1] }}" class="btn-delete" onclick="return confirm('Kya aap sach mein delete karna chahte hain?')">Delete</a>
                 </td>
             </tr>
             {% endfor %}
@@ -92,7 +111,6 @@ def index():
         students_list = cursor.fetchall()
         cursor.close()
         conn.close()
-    
     return render_template_string(HTML_PAGE, students=students_list)
 
 @app.route('/add', methods=['POST'])
@@ -100,32 +118,27 @@ def add_student():
     name = request.form.get('name')
     roll_no = request.form.get('roll_no')
     address = request.form.get('address')
-
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO students (name, roll_no, address) VALUES (%s, %s, %s)", 
-                       (name, roll_no, address))
+        cursor.execute("INSERT INTO students (name, roll_no, address) VALUES (%s, %s, %s)", (name, roll_no, address))
         conn.commit()
         cursor.close()
         conn.close()
-    
     return "<script>window.location.href='/';</script>"
 
-# --- NEW DELETE ROUTE ---
 @app.route('/delete/<roll_no>')
 def delete_student(roll_no):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        # SQL Query to delete based on roll number
         cursor.execute("DELETE FROM students WHERE roll_no = %s", (roll_no,))
         conn.commit()
         cursor.close()
         conn.close()
-    
-    # Page ko refresh karne ke liye redirect
     return "<script>window.location.href='/';</script>"
 
 if __name__ == '__main__':
+    # --- AUTOMATION START: Pehle DB setup hoga, fir App chalegi ---
+    init_db()
     app.run(host='0.0.0.0', port=8080)
