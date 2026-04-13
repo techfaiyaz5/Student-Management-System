@@ -53,23 +53,22 @@ pipeline {
         stage('Step 5: Deployment & Auto-Tunnel') {
             steps {
                 script {
-                    echo 'Setting up permanent access...'
-                    
-                    // Background Tunnel: Taki localhost:30001 hamesha chale
-                    // 'pkill' purane tunnel ko band karega taki naya fresh start ho
-                    sh "pkill -f 'minikube tunnel' || true"
-                    sh "nohup minikube tunnel > tunnel.log 2>&1 &"
-                    
-                    // Rolling Update: Purane pods hatakar naye images pull karega
-                    sh "kubectl rollout restart deployment ${APP_NAME}"
-                    sh "kubectl rollout status deployment ${APP_NAME}"
+                    // 1. Pehle environment set karo (Taki permission error na aaye)
+                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config"]) {
+                        
+                        echo 'Starting Tunnel in Background...'
+                        sh "pkill -f 'minikube tunnel' || true"
+                        sh "nohup minikube tunnel > tunnel.log 2>&1 &"
+                        
+                        echo 'Force Refreshing App...'
+                        sh "kubectl rollout restart deployment student-app"
+                        sh "kubectl rollout status deployment student-app"
 
-                    echo "--------------------------------------------------------"
-                    echo "MUBARAK HO! SAB KUCH AUTO-SET HO GAYA HAI."
-                    echo "APP LINK: http://localhost:30001"
-                    echo "--------------------------------------------------------"
-                }
-            }
-        }
-    }
-}
+                        // 2. Ye message script block ke ANDAR hona chahiye
+                        echo "--------------------------------------------------------"
+                        echo "BHAI, AB TO CHALNA HI PADEGA: http://localhost:30001"
+                        echo "--------------------------------------------------------"
+                    } // withEnv ka bracket band
+                } // script ka bracket band
+            } // steps ka bracket band
+        } /
