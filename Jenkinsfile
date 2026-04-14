@@ -87,9 +87,14 @@ pipeline {
                             sh "sudo pkill -f 'minikube tunnel' || true"
                             sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
                             
-                            echo "Starting Tunnel & Port-Forward in Background..."
-                            sh "nohup sudo minikube tunnel > tunnel.log 2>&1 &"
-                            sh "nohup kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > port-forward.log 2>&1 &"
+                            echo "Starting Tunnel & Port-Forward in Background (Persistence Enabled)..."
+                            
+                            // JENKINS_NODE_COOKIE=dontKillMe asli magic hai jo process ko zinda rakhta hai
+                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > tunnel.log 2>&1 &"
+                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > port-forward.log 2>&1 &"
+                            
+                            echo "Waiting for 5 seconds to ensure ports are active..."
+                            sh "sleep 5"
                         }
                         
                         sh "kubectl rollout status deployment ${APP_NAME}"
@@ -97,7 +102,6 @@ pipeline {
                 }
             }
         }
-    }
 
     post {
         success {
