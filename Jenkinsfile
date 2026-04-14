@@ -12,8 +12,8 @@ pipeline {
         stage('Step 1: Permission & System Fix') {
             steps {
                 echo 'Fixing Permissions to avoid "Permission Denied" errors...'
-                sh "sudo chown -R jenkins:jenkins ${MY_HOME}/.minikube || true"
-                sh "sudo chmod -R 777 ${MY_HOME}/.minikube || true"
+                sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.minikube || true"
+                sh "sudo chmod -R 777 /home/faiyyaz/.minikube || true"
                 
                 echo 'Cleaning up old Docker artifacts...'
                 sh "docker system prune -f"
@@ -62,7 +62,7 @@ pipeline {
         stage('Step 5: Scaling Metrics & Addons') {
             steps {
                 script {
-                    withEnv(["HOME=${MY_HOME}", "PATH+EXTRA=/usr/local/bin"]) {
+                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
                         echo 'Enabling Metrics Server for Auto-Scaling...'
                         sh "minikube addons enable metrics-server"
                     }
@@ -73,7 +73,7 @@ pipeline {
         stage('Step 6: Auto-Tunnel & Access') {
             steps {
                 script {
-                    withEnv(["HOME=${MY_HOME}", "KUBECONFIG=${MY_HOME}/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
+                    withEnv(["HOME=$/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
                         
                         def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
                         
