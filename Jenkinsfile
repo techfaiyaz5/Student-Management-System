@@ -43,16 +43,18 @@ pipeline {
         stage('Step 4: Infrastructure & HPA Setup') {
             steps {
                 script {
-                    echo 'Ensuring Minikube is Running...'
-                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin", "KUBECONFIG=/home/faiyyaz/.kube/config"]) {
-                        // Sudo use kar rahe hain taaki host permission error na aaye
-                        sh "sudo minikube start --driver=docker --force --user=jenkins"
+                    echo 'Ensuring Minikube is Running with User Context...'
+                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
+                        
+                        // 1. Minikube ko force start karenge aapke user ke environment ke saath
+                        sh "sudo -E minikube start --driver=docker --force --container-runtime=docker"
                         
                         echo 'Applying K8s Configurations (DB, App, HPA)...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/hpa.yaml"
                         
+                        // 2. Deployment ko restart karenge taaki naya image load ho jaye
                         sh "kubectl rollout restart deployment ${APP_NAME}"
                     }
                 }
