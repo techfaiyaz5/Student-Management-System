@@ -45,7 +45,7 @@ pipeline {
                 script {
                     echo 'Ensuring Minikube is Running with User Context...'
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
-                        
+                        sh "minikube delete --all || true"
                         sh "minikube start --driver=docker --force"
                         
                         echo 'Applying K8s Configurations (DB, App, HPA)...'
