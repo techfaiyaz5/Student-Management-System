@@ -73,7 +73,7 @@ pipeline {
         stage('Step 6: Auto-Tunnel & Access') {
             steps {
                 script {
-                    withEnv(["HOME=$/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
+                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
                         
                         def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
                         
