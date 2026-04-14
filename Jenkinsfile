@@ -102,6 +102,8 @@ pipeline {
                         
                         // Deployment ka final status check
                         sh "kubectl rollout status deployment ${APP_NAME}"
+                        sh "sudo chown -R faiyyaz:faiyyaz /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
+                        sh "sudo chmod -R 755 /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
                     }
                 }
             }
