@@ -2,20 +2,21 @@ pipeline {
     agent any 
 
     environment {
-        // Tumhare Docker Hub ka username
         DOCKER_HUB_USER = "techfaiyaz5" 
         APP_NAME = "student-app"
-        // Universal Port jo humne fix kiya hai
         FIXED_PORT = "30001"
     }
 
     stages {
-        stage('Step 1: Fresh Start (Cleanup)') {
+        stage('Step 1: Permission & System Fix') {
             steps {
-                echo 'Cleaning up old Docker artifacts for a Zero-State build...'
-                // Purane containers aur dangling images saaf karega
+                echo 'Fixing Permissions to avoid "Permission Denied" errors...'
+                // Ye line hamesha ke liye permission ka jhamela khatam kar degi
+                sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.minikube || true"
+                sh "sudo chmod -R 777 /home/faiyyaz/.minikube || true"
+                
+                echo 'Cleaning up old Docker artifacts...'
                 sh "docker system prune -f"
-                // Purani image delete karega taaki cache ka chakkar na rahe
                 sh "docker rmi ${DOCKER_HUB_USER}/${APP_NAME}:latest || true"
                 checkout scm
             }
@@ -24,16 +25,14 @@ pipeline {
         stage('Step 2: Fresh Build (No Cache)') {
             steps {
                 echo 'Building Image from scratch...'
-                // --no-cache se har baar fresh build hoga
                 sh "docker build --no-cache -t ${APP_NAME}:latest ."
             }
         }
 
         stage('Step 3: Push to Docker Hub') {
             steps {
-                echo 'Pushing fresh image to Cloud...'
+                echo 'Pushing fresh image to Docker Hub...'
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-                    sh "docker build -t ${DOCKER_HUB_USER}/${APP_NAME}:latest ."
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                     sh "docker tag ${APP_NAME}:latest \$DOCKER_USER/${APP_NAME}:latest"
                     sh "docker push \$DOCKER_USER/${APP_NAME}:latest"
@@ -41,54 +40,56 @@ pipeline {
             }
         }
 
-        stage('Step 4: Smart Infrastructure Setup') {
+        stage('Step 4: Infrastructure & HPA Setup') {
             steps {
                 script {
-                    echo 'Ensuring Environment is ready...'
-                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
-                        // Minikube check
-                        sh "minikube status || minikube start --driver=docker"
+                    echo 'Ensuring Minikube is Running...'
+                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin", "KUBECONFIG=/home/faiyyaz/.kube/config"]) {
+                        // Sudo use kar rahe hain taaki host permission error na aaye
+                        sh "sudo minikube status || sudo minikube start --driver=docker --force"
                         
-                        echo 'Applying K8s Configurations...'
+                        echo 'Applying K8s Configurations (DB, App, HPA)...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/hpa.yaml"
                         
-                        // Force update: Naye pods fresh image ke saath aayenge
                         sh "kubectl rollout restart deployment ${APP_NAME}"
                     }
                 }
             }
         }
 
-        stage('Step 5: Local-Only Tunnel & Port Access') {
+        stage('Step 5: Scaling Metrics & Addons') {
+            steps {
+                script {
+                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
+                        echo 'Enabling Metrics Server for Auto-Scaling...'
+                        // Iske bina 0%/50% nahi dikhega
+                        sh "minikube addons enable metrics-server"
+                    }
+                }
+            }
+        }
+
+        stage('Step 6: Auto-Tunnel & Access') {
             steps {
                 script {
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
                         
-                        // Check: Kya hum Local (Minikube) par hain?
                         def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
                         
                         if (context.contains("minikube")) {
                             echo "--- LOCAL DETECTED: Automating Tunnel & Port ${FIXED_PORT} ---"
                             
-                            // 1. Purane tunnel aur port connection ko kill karo
-                            sh "pkill -f 'minikube tunnel' || true"
+                            // Purane process saaf karo taaki port busy error na aaye
+                            sh "sudo pkill -f 'minikube tunnel' || true"
                             sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
                             
-                            // 2. Start Minikube Tunnel in background (LoadBalancer Support ke liye)
-                            echo "Starting Minikube Tunnel..."
-                            sh "nohup minikube tunnel > tunnel.log 2>&1 &"
-                            
-                            // 3. Start Port-Forwarding (Direct Access ke liye)
-                            echo "Starting Port-Forwarding to ${FIXED_PORT}..."
+                            echo "Starting Tunnel & Port-Forward in Background..."
+                            sh "nohup sudo minikube tunnel > tunnel.log 2>&1 &"
                             sh "nohup kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > port-forward.log 2>&1 &"
-                            
-                            echo "SUCCESS: App will be ready at http://localhost:${FIXED_PORT}"
-                        } else {
-                            echo "--- CLOUD/AWS DETECTED: Skipping Local-only Tunneling ---"
                         }
-
+                        
                         sh "kubectl rollout status deployment ${APP_NAME}"
                     }
                 }
@@ -99,8 +100,9 @@ pipeline {
     post {
         success {
             echo "--------------------------------------------------------"
-            echo "MUBARAK HO! SAB KUCH FRESH AUR AUTO-SET HO GAYA HAI."
+            echo "MUBARAK HO! Faiyyaz bhai, sab kuch auto-set ho gaya hai."
             echo "APP LINK: http://localhost:${FIXED_PORT}"
+            echo "CHECK SCALING: Run 'kubectl get hpa' in your terminal"
             echo "--------------------------------------------------------"
         }
     }
