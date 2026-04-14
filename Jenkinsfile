@@ -46,7 +46,7 @@ pipeline {
                     echo 'Ensuring Minikube is Running...'
                     withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin", "KUBECONFIG=/home/faiyyaz/.kube/config"]) {
                         // Sudo use kar rahe hain taaki host permission error na aaye
-                        sh "sudo minikube status || sudo minikube start --driver=docker --force"
+                        sh "sudo minikube start --driver=docker --force --user=jenkins"
                         
                         echo 'Applying K8s Configurations (DB, App, HPA)...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
