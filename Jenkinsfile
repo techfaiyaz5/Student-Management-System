@@ -47,7 +47,7 @@ pipeline {
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
                         
                         // 1. Minikube ko force start karenge aapke user ke environment ke saath
-                        sh "sudo -E minikube start --driver=docker --force --container-runtime=docker"
+                        sh "minikube start --driver=docker --force"
                         
                         echo 'Applying K8s Configurations (DB, App, HPA)...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
