@@ -73,25 +73,34 @@ pipeline {
         stage('Step 6: Auto-Tunnel & Access') {
             steps {
                 script {
-                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
+                    // Yahan humne environment ko ekdam pakka kar diya hai
+                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
                         
                         def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
                         
                         if (context.contains("minikube")) {
                             echo "--- LOCAL DETECTED: Automating Tunnel & Port ${FIXED_PORT} ---"
                             
+                            // 1. Ownership Fix: Pipeline ke sath hi aapko wapas maalik bana dega
+                            sh "sudo chown -R faiyyaz:faiyyaz /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
+                            sh "sudo chmod -R 777 /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
+
+                            // 2. Cleanup: Purane fase huye connections saaf karega
                             sh "sudo pkill -f 'minikube tunnel' || true"
+                            sh "sudo pkill -f 'kubectl port-forward' || true"
                             sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
                             
-                            echo "Starting Tunnel & Port-Forward in Background (Persistence Enabled)..."
+                            echo "Starting Persistent Tunnel & Port-Forward..."
                             
-                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > tunnel.log 2>&1 &"
-                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > port-forward.log 2>&1 &"
+                            // 3. Persistence: 'dontKillMe' ensure karega ki pipeline khatam hone par rasta band na ho
+                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > /home/faiyyaz/tunnel.log 2>&1 &"
+                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > /home/faiyyaz/pf.log 2>&1 &"
                             
-                            echo "Waiting for 5 seconds to ensure ports are active..."
+                            echo "Waiting for connection to stabilize..."
                             sh "sleep 5"
                         }
                         
+                        // Deployment ka final status check
                         sh "kubectl rollout status deployment ${APP_NAME}"
                     }
                 }
