@@ -14,7 +14,7 @@ pipeline {
                 echo 'Fixing Permissions to avoid "Permission Denied" errors...'
                 sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.minikube || true"
                 sh "sudo chmod -R 777 /home/faiyyaz/.minikube || true"
-                
+
                 echo 'Cleaning up old Docker artifacts...'
                 sh "docker system prune -f"
                 sh "docker rmi ${DOCKER_HUB_USER}/${APP_NAME}:latest || true"
@@ -47,12 +47,12 @@ pipeline {
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
                         sh "minikube delete --all || true"
                         sh "minikube start --driver=docker --force"
-                        
+
                         echo 'Applying K8s Configurations (DB, App, HPA)...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/hpa.yaml"
-                        
+
                         sh "kubectl rollout restart deployment ${APP_NAME}"
                     }
                 }
@@ -75,12 +75,12 @@ pipeline {
                 script {
                     // Yahan humne environment ko ekdam pakka kar diya hai
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
-                        
+
                         def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
-                        
+
                         if (context.contains("minikube")) {
                             echo "--- LOCAL DETECTED: Automating Tunnel & Port ${FIXED_PORT} ---"
-                            
+
                             // 1. Ownership Fix: Pipeline ke sath hi aapko wapas maalik bana dega
                             sh "sudo chown -R faiyyaz:faiyyaz /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
                             sh "sudo chmod -R 777 /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
@@ -89,17 +89,17 @@ pipeline {
                             sh "sudo pkill -f 'minikube tunnel' || true"
                             sh "sudo pkill -f 'kubectl port-forward' || true"
                             sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
-                            
+
                             echo "Starting Persistent Tunnel & Port-Forward..."
-                            
+
                             // 3. Persistence: 'dontKillMe' ensure karega ki pipeline khatam hone par rasta band na ho
                             sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > /home/faiyyaz/tunnel.log 2>&1 &"
                             sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > /home/faiyyaz/pf.log 2>&1 &"
-                            
+
                             echo "Waiting for connection to stabilize..."
                             sh "sleep 5"
                         }
-                        
+
                         // Deployment ka final status check
                         sh "kubectl rollout status deployment ${APP_NAME}"
                         sh "sudo chown -R faiyyaz:faiyyaz /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
