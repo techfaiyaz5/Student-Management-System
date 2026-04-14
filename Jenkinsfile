@@ -94,7 +94,7 @@ pipeline {
                             
                             // 3. Persistence: 'dontKillMe' ensure karega ki pipeline khatam hone par rasta band na ho
                             sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > /home/faiyyaz/tunnel.log 2>&1 &"
-                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward --address 0.0.0.0 svc/student-app-service ${FIXED_PORT}:80 > /home/faiyyaz/pf.log 2>&1 &"
+                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > /home/faiyyaz/pf.log 2>&1 &"
                             
                             echo "Waiting for connection to stabilize..."
                             sh "sleep 5"
