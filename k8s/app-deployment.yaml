@@ -18,6 +18,11 @@ spec:
         imagePullPolicy: Always # Har baar fresh image pull karega
         ports:
         - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"  # 0.1 CPU core (Base line)
+          limits:
+            cpu: "200m"  # Max limit jiske basis pe % niklega
         env:
         - name: DB_HOST
           value: "db-service"  # <--- Ye tumhare MySQL service ka naam hai

@@ -52,6 +52,7 @@ pipeline {
                         echo 'Applying K8s Configurations...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
+                        sh "kubectl apply -f k8s/hpa.yaml"
                         
                         // Force update: Naye pods fresh image ke saath aayenge
                         sh "kubectl rollout restart deployment ${APP_NAME}"

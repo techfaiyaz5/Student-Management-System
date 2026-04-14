@@ -1,0 +1,18 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: student-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: student-app
+  minReplicas: 2    # Load kam hone par wapas 2 pod ho jayenge
+  maxReplicas: 10   # Load badhne par max 10 pod tak jayenge
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50 # 50% cross hote hi scaling shuru
