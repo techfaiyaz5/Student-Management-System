@@ -44,7 +44,7 @@ pipeline {
             steps {
                 script {
                     echo 'Ensuring Minikube is Running with User Context...'
-                    withEnv(["HOME=${MY_HOME}", "KUBECONFIG=${MY_HOME}/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
+                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
                         
                         sh "minikube start --driver=docker --force"
                         
