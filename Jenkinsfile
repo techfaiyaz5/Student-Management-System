@@ -45,9 +45,9 @@ pipeline {
                 script {
                     echo 'Ensuring Minikube is Running with User Context...'
                     withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
-                        sh "sudo mkdir -p /home/faiyyaz/.minikube"
-                        sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.minikube"
-                        sh "sudo chmod -R 777 /home/faiyyaz/.minikube"
+                        sh "sudo mkdir -p /home/faiyyaz/.kube /home/faiyyaz/.minikube"
+                        sh "sudo chmod -R 777 /home/faiyyaz/.kube /home/faiyyaz/.minikube"
+                        sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.kube /home/faiyyaz/.minikube || true"
                         sh "minikube delete --all || true"
                         sh "minikube start --driver=docker --memory=1600mb --cpus=2 --force"
                         
