@@ -100,14 +100,20 @@ pipeline {
                 }
             }
         }
-    } // <-- Ye wala stages ka bracket missing tha
-
-    post {
-        success {
-            
-            echo "Congrats. Your App Run On: http://localhost:${FIXED_PORT}"
-            echo "Run this command (ONLY FOR LOCAL):  kubectl port-forward svc/student-app-service 30001:80 --address 0.0.0.0"
-            
+        stage('Step 7: Your Appn is Live') {
+            steps {
+                script {
+                    
+                        echo "Congrats. Your App Run On: http://localhost:${FIXED_PORT}"
+                        echo "Run These Commands For app lition (ONLY FOR LOCAL)"
+                        echo "1. sudo chown -R \$USER:\$USER ~/.minikube ~/.kube"
+                        echo "2. kubectl port-forward svc/student-app-service 30001:80 --address 0.0.0.0"
+                    
+                    
+                }
+            }
         }
-    }
+    } 
 }
+    
+    
