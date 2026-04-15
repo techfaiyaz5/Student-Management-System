@@ -104,11 +104,10 @@ pipeline {
 
     post {
         success {
-            echo "--------------------------------------------------------"
-            echo "MUBARAK HO! Faiyyaz bhai, sab kuch auto-set ho gaya hai."
-            echo "APP LINK: http://localhost:${FIXED_PORT}"
-            echo "CHECK SCALING: Run 'kubectl get hpa' in your terminal"
-            echo "--------------------------------------------------------"
+            
+            echo "Congrats. Your App Run On: http://localhost:${FIXED_PORT}"
+            echo "Run this command (ONLY FOR LOCAL):  kubectl port-forward svc/student-app-service 30001:80 --address 0.0.0.0"
+            
         }
     }
 }
