@@ -81,18 +81,16 @@ pipeline {
                         if (context.contains("minikube")) {
                             echo "--- LOCAL DETECTED: Automating Tunnel & Port ${FIXED_PORT} ---"
 
-                            // 1. Ownership Fix: Pipeline ke sath hi aapko wapas maalik bana dega
-                            sh "sudo chown -R faiyyaz:faiyyaz /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
-                            sh "sudo chmod -R 777 /home/faiyyaz/.minikube /home/faiyyaz/.kube || true"
+                                                      
 
-                            // 2. Cleanup: Purane fase huye connections saaf karega
+                            // 1. Cleanup: Purane fase huye connections saaf karega
                             sh "sudo pkill -f 'minikube tunnel' || true"
                             sh "sudo pkill -f 'kubectl port-forward' || true"
                             sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
 
                             echo "Starting Persistent Tunnel & Port-Forward..."
 
-                            // 3. Persistence: 'dontKillMe' ensure karega ki pipeline khatam hone par rasta band na ho
+                            // 2. Persistence: 'dontKillMe' ensure karega ki pipeline khatam hone par rasta band na ho
                             sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > /home/faiyyaz/tunnel.log 2>&1 &"
                             sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > /home/faiyyaz/pf.log 2>&1 &"
 
