@@ -100,7 +100,7 @@ pipeline {
                 }
             }
         }
-        stage('Step 7: Your Appn is Live') {
+        stage('Step 7: Your App is Live') {
             steps {
                 script {
                     
