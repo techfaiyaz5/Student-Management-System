@@ -108,6 +108,7 @@ pipeline {
                         echo "Run These Commands For app lition (ONLY FOR LOCAL)"
                         echo "1. sudo chown -R \$USER:\$USER ~/.minikube ~/.kube"
                         echo "2. kubectl port-forward svc/student-app-service 30001:80 --address 0.0.0.0"
+                        echo "Run Traffic on app (Run in Terminal): while true; do wget -q -O- http://localhost:30001; done"
                     
                     
                 }
