@@ -53,7 +53,6 @@ pipeline {
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/hpa.yaml"
-                        
                         sh "kubectl rollout restart deployment ${APP_NAME}"
                     }
                 }
