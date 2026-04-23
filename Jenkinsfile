@@ -49,7 +49,7 @@ pipeline {
                         sh "sudo chmod -R 777 /home/faiyyaz/.kube /home/faiyyaz/.minikube"
                         sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.kube /home/faiyyaz/.minikube || true"
                         sh "minikube delete --all || true"
-                        sh "minikube start --driver=docker --memory=1900mb --cpus=2 --force"
+                        sh "minikube start --driver=docker --memory=1900mb --cpus=2"
                         
                         echo 'Applying K8s Configurations (DB, App, HPA)...'
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
