@@ -12,8 +12,7 @@ pipeline {
         stage('Step 1: Permission & System Fix') {
             steps {
                 echo 'Fixing Permissions to avoid "Permission Denied" errors...'
-                sh "sudo chown -R jenkins:jenkins /home/faiyyaz/.minikube || true"
-                sh "sudo chmod -R 777 /home/faiyyaz/.minikube || true"
+                
                 
                 echo 'Cleaning up old Docker artifacts...'
                 sh "docker system prune -f"
