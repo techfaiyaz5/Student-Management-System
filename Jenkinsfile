@@ -5,15 +5,13 @@ pipeline {
         DOCKER_HUB_USER = "techfaiyaz5" 
         APP_NAME = "student-app"
         FIXED_PORT = "30001"
-        MY_HOME = "/home/faiyyaz" // Home path define kiya hai consistency ke liye
+        MY_HOME = "/home/ubuntu"
     }
 
     stages {
+
         stage('Step 1: Permission & System Fix') {
             steps {
-                echo 'Fixing Permissions to avoid "Permission Denied" errors...'
-                
-                
                 echo 'Cleaning up old Docker artifacts...'
                 sh "docker system prune -f"
                 sh "docker rmi ${DOCKER_HUB_USER}/${APP_NAME}:latest || true"
@@ -39,17 +37,25 @@ pipeline {
             }
         }
 
+        // ✅ FIX 1: minikube delete hataya — sirf check karo
         stage('Step 4: Infrastructure & HPA Setup') {
             steps {
                 script {
-                    echo 'Ensuring Minikube is Running with User Context...'
-                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
-                        sh "mkdir -p /home/faiyyaz/.kube /home/faiyyaz/.minikube"
+                    echo 'Ensuring Minikube is Running...'
+                    withEnv(["HOME=/home/ubuntu", "KUBECONFIG=/home/ubuntu/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
                         
-                        sh "minikube delete --all || true"
-                        sh "minikube start --driver=docker"
-                        
-                        echo 'Applying K8s Configurations (DB, App, HPA)...'
+                        def status = sh(
+                            script: "minikube status | grep -c 'Running' || echo '0'",
+                            returnStdout: true
+                        ).trim()
+
+                        if (status == "0") {
+                            echo "Minikube not running — Starting..."
+                            sh "minikube start --driver=docker --force"
+                        } else {
+                            echo "Minikube already running — Skipping start"
+                        }
+
                         sh "kubectl apply -f k8s/db-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/app-deployment.yaml --validate=false"
                         sh "kubectl apply -f k8s/hpa.yaml"
@@ -59,10 +65,11 @@ pipeline {
             }
         }
 
+        // ✅ FIX 2: faiyyaz → ubuntu kar diya
         stage('Step 5: Scaling Metrics & Addons') {
             steps {
                 script {
-                    withEnv(["HOME=/home/faiyyaz", "PATH+EXTRA=/usr/local/bin"]) {
+                    withEnv(["HOME=/home/ubuntu", "KUBECONFIG=/home/ubuntu/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
                         echo 'Enabling Metrics Server for Auto-Scaling...'
                         sh "minikube addons enable metrics-server"
                     }
@@ -70,48 +77,60 @@ pipeline {
             }
         }
 
+        // ✅ FIX 3: nohup hataya — systemd service se port-forward chalao
         stage('Step 6: Auto-Tunnel & Access') {
             steps {
                 script {
-                    withEnv(["HOME=/home/faiyyaz", "KUBECONFIG=/home/faiyyaz/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
-                        
-                        def context = sh(script: "kubectl config current-context", returnStdout: true).trim()
-                        
-                        if (context.contains("minikube")) {
-                            echo "--- LOCAL DETECTED: Automating Tunnel & Port ${FIXED_PORT} ---"
-                            
-                            sh "sudo pkill -f 'minikube tunnel' || true"
-                            sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
-                            
-                            echo "Starting Tunnel & Port-Forward in Background (Persistence Enabled)..."
-                            
-                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe sudo minikube tunnel > tunnel.log 2>&1 &"
-                            sh "nohup env JENKINS_NODE_COOKIE=dontKillMe kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0 > port-forward.log 2>&1 &"
-                            
-                            echo "Waiting for 5 seconds to ensure ports are active..."
-                            sh "sleep 5"
-                        }
-                        
+                    withEnv(["HOME=/home/ubuntu", "KUBECONFIG=/home/ubuntu/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
+
+                        sh "sudo pkill -f 'minikube tunnel' || true"
+                        sh "sudo pkill -f 'kubectl port-forward' || true"
+                        sh "sudo fuser -k ${FIXED_PORT}/tcp || true"
+
+                        // Systemd service banao — Jenkins band hone ke baad bhi survive karega
+                        sh """
+                            sudo bash -c 'cat > /etc/systemd/system/kube-portforward.service << EOF
+[Unit]
+Description=Kubectl Port Forward for student-app
+After=network.target
+
+[Service]
+User=ubuntu
+Environment=KUBECONFIG=/home/ubuntu/.kube/config
+ExecStart=/usr/local/bin/kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+                        """
+                        sh "sudo systemctl daemon-reload"
+                        sh "sudo systemctl restart kube-portforward"
+                        sh "sudo systemctl enable kube-portforward"
+
+                        echo "Waiting for port to be active..."
+                        sh "sleep 5"
+
                         sh "kubectl rollout status deployment ${APP_NAME}"
                     }
                 }
             }
         }
+
         stage('Step 7: Your App is Live') {
             steps {
                 script {
-                    
-                        echo "Congrats. Your App Run On: http://localhost:${FIXED_PORT}"
-                        echo "Run These Commands For app lition (ONLY FOR LOCAL)"
-                        echo "1. sudo chown -R \$USER:\$USER ~/.minikube ~/.kube"
-                        echo "2. kubectl port-forward svc/student-app-service 30001:80 --address 0.0.0.0"
-                        echo "Run Traffic on app (Run in Terminal): while true; do wget -q -O- http://localhost:30001; done"
-                    
-                    
+                    def ip = sh(
+                        script: "curl -s http://checkip.amazonaws.com || echo 'YOUR-EC2-IP'",
+                        returnStdout: true
+                    ).trim()
+                    echo "=========================================="
+                    echo "App Live at: http://${ip}:${FIXED_PORT}"
+                    echo "=========================================="
+                    echo "Load Test: while true; do wget -q -O- http://${ip}:${FIXED_PORT}; done"
                 }
             }
         }
-    } 
+    }
 }
-    
-    
