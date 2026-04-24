@@ -106,11 +106,16 @@ EOF'
             }
         }
 
-        stage('Step 7: Success') {
+        tage('Step 7: Success') {
             steps {
                 script {
-                                       
+                    def ip = sh(
+                        script: "curl -s http://checkip.amazonaws.com || echo 'YOUR-EC2-IP'",
+                        returnStdout: true
+                    ).trim()
+                    
                     echo "App Live at: http://${ip}:${FIXED_PORT}"
+                    
                     
                 }
             }
