@@ -11,25 +11,36 @@ def init_db():
     if conn:
         try:
             cursor = conn.cursor()
-            # Agar table nahi hai toh khud bana dega
+            # 1. Table banao agar nahi hai
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS students (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100),
-                    roll_no VARCHAR(50) UNIQUE,
+                    roll_no VARCHAR(50),
                     address VARCHAR(255)
                 )
             """)
-            conn.commit()
+            
+            # 2. ✅ SMART FIX: Existing table par UNIQUE constraint add karo
+            try:
+                # Isse search aur delete fast ho jayega aur locks nahi fasenge
+                cursor.execute("ALTER TABLE students ADD UNIQUE (roll_no)")
+                conn.commit()
+                print("Success: UNIQUE constraint added to roll_no!")
+            except Exception as e:
+                # Agar pehle se unique hai toh MySQL error dega, use ignore karo
+                print("Info: UNIQUE constraint already exists or skipping.")
+
             print("Database initialized successfully!")
-            cursor.close()
-            conn.close()
         except Exception as e:
             print(f"Error initializing database: {e}")
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
 
 # Database connection function with retry logic
 def get_db_connection():
-    # Environment variables se values uthayega (Jo humne deployment.yaml mein di hain)
     db_host = os.getenv('DB_HOST', 'db-service')
     db_user = os.getenv('DB_USER', 'root')
     db_password = os.getenv('DB_PASSWORD', 'password')
@@ -49,7 +60,6 @@ def get_db_connection():
             time.sleep(2)
     return None
 
-# HTML Template (Wahi purana wala jo tumne diya)
 HTML_PAGE = '''
 <!DOCTYPE html>
 <html>
@@ -106,11 +116,14 @@ def index():
     conn = get_db_connection()
     students_list = []
     if conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT name, roll_no, address FROM students")
-        students_list = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, roll_no, address FROM students")
+            students_list = cursor.fetchall()
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
     return render_template_string(HTML_PAGE, students=students_list)
 
 @app.route('/add', methods=['POST'])
@@ -120,25 +133,38 @@ def add_student():
     address = request.form.get('address')
     conn = get_db_connection()
     if conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO students (name, roll_no, address) VALUES (%s, %s, %s)", (name, roll_no, address))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO students (name, roll_no, address) VALUES (%s, %s, %s)", (name, roll_no, address))
+            conn.commit()
+        except Exception as e:
+            print(f"Add Error: {e}")
+            if conn: conn.rollback()
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
     return "<script>window.location.href='/';</script>"
 
 @app.route('/delete/<roll_no>')
 def delete_student(roll_no):
     conn = get_db_connection()
     if conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM students WHERE roll_no = %s", (roll_no,))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM students WHERE roll_no = %s", (roll_no,))
+            conn.commit()
+            print(f"Deleted roll_no: {roll_no}")
+        except Exception as e:
+            print(f"Delete Error: {e}")
+            if conn: conn.rollback()
+            return f"Error: {str(e)}", 500
+        finally:
+            if conn:
+                cursor.close()
+                conn.close()
     return "<script>window.location.href='/';</script>"
 
 if __name__ == '__main__':
-    # --- AUTOMATION START: Pehle DB setup hoga, fir App chalegi ---
     init_db()
     app.run(host='0.0.0.0', port=8080)
