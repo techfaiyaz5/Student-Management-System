@@ -5,7 +5,7 @@ pipeline {
         DOCKER_HUB_USER = "techfaiyaz5" 
         APP_NAME = "student-app"
         FIXED_PORT = "30001"
-        MY_HOME = "/home/ubuntu"
+        MY_HOME = "/var/lib/jenkins"
     }
 
     stages {
@@ -42,7 +42,7 @@ pipeline {
             steps {
                 script {
                     echo 'Ensuring Minikube is Running...'
-                    withEnv(["HOME=/home/ubuntu", "KUBECONFIG=/home/ubuntu/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
+                    withEnv(["HOME=/var/lib/jenkins", "KUBECONFIG=/var/lib/jenkins/.kube/config", "PATH+EXTRA=/usr/local/bin:/usr/bin:/bin"]) {
                         
                         def status = sh(
                             script: "minikube status | grep -c 'Running' || echo '0'",
@@ -69,8 +69,7 @@ pipeline {
         stage('Step 5: Scaling Metrics & Addons') {
             steps {
                 script {
-                    withEnv(["HOME=/home/ubuntu", "KUBECONFIG=/home/ubuntu/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
-                        echo 'Enabling Metrics Server for Auto-Scaling...'
+                    withEnv(["HOME=/var/lib/jenkins", "KUBECONFIG=/var/lib/jenkins/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
                         sh "minikube addons enable metrics-server"
                     }
                 }
@@ -81,7 +80,7 @@ pipeline {
         stage('Step 6: Auto-Tunnel & Access') {
             steps {
                 script {
-                    withEnv(["HOME=/home/ubuntu", "KUBECONFIG=/home/ubuntu/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
+                    withEnv(["HOME=/var/lib/jenkins", "KUBECONFIG=/var/lib/jenkins/.kube/config", "PATH+EXTRA=/usr/local/bin"]) {
 
                         sh "sudo pkill -f 'minikube tunnel' || true"
                         sh "sudo pkill -f 'kubectl port-forward' || true"
@@ -96,7 +95,7 @@ After=network.target
 
 [Service]
 User=ubuntu
-Environment=KUBECONFIG=/home/ubuntu/.kube/config
+Environment=KUBECONFIG=/var/lib/jenkins/.kube/config
 ExecStart=/usr/local/bin/kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0
 Restart=always
 RestartSec=5
