@@ -106,7 +106,7 @@ EOF'
             }
         }
 
-        tage('Step 7: Success') {
+        stage('Step 7: Success') {
             steps {
                 script {
                     def ip = sh(
