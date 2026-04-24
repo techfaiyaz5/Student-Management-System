@@ -110,12 +110,12 @@ EOF'
             steps {
                 script {
                     def ip = sh(
-                        script: "curl -s http://checkip.amazonaws.com || echo 'YOUR-EC2-IP'",
+                        script: 
                         returnStdout: true
                     ).trim()
-                    echo "=========================================="
+                    
                     echo "App Live at: http://${ip}:${FIXED_PORT}"
-                    echo "=========================================="
+                    
                 }
             }
         }
