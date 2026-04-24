@@ -88,7 +88,7 @@ After=network.target
 [Service]
 User=ubuntu
 Environment=KUBECONFIG=${KUBECONFIG}
-ExecStart=/usr/local/bin/kubectl port-forward svc/student-app-service ${FIXED_PORT}:80 --address 0.0.0.0
+ExecStart=/usr/local/bin/kubectl port-forward svc/student-app-service ${FIXED_PORT}:8080 --address 0.0.0.0
 Restart=always
 RestartSec=5
 
