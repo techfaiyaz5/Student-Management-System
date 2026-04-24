@@ -109,11 +109,7 @@ EOF'
         stage('Step 7: Success') {
             steps {
                 script {
-                    def ip = sh(
-                        script: 
-                        returnStdout: true
-                    ).trim()
-                    
+                                       
                     echo "App Live at: http://${ip}:${FIXED_PORT}"
                     
                 }
