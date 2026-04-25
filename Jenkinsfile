@@ -66,7 +66,7 @@ pipeline {
 
         stage('Step 5: Scaling Metrics') {
             steps {
-                sh "minikube addons enable metrics-server"
+                sh 'sudo -u ubuntu minikube addons enable metrics-server'
             }
         }
 
