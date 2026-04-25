@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Step 1: Permission & System Fix') {
             steps {
-                eecho 'Cleaning up old Docker artifacts...'
+                echo 'Cleaning up old Docker artifacts...'
 
         // Kubeconfig Fix
         sh "sudo mkdir -p /var/lib/jenkins/.kube"
