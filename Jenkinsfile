@@ -13,15 +13,20 @@ pipeline {
     stages {
         stage('Step 1: Permission & System Fix') {
             steps {
-                echo 'Cleaning up old Docker artifacts...'
-        
-        // --- YE LINES ADD KAREIN ---
+                eecho 'Cleaning up old Docker artifacts...'
+
+        // Kubeconfig Fix
+        sh "sudo mkdir -p /var/lib/jenkins/.kube"
+        sh "sudo cp /home/ubuntu/.kube/config /var/lib/jenkins/.kube/config"
+        sh "sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube/"
+
+        // Permissions Fix
         sh "sudo chmod 666 /var/run/docker.sock"
         sh "sudo chown -R jenkins:jenkins /home/ubuntu/.minikube"
         sh "sudo chmod -R 777 /home/ubuntu/.minikube"
         sh "sudo chmod -R 777 /home/ubuntu/.kube"
-        // ---------------------------
 
+        // Cleanup
         sh "docker system prune -f"
         sh "docker rmi ${DOCKER_HUB_USER}/${APP_NAME}:latest || true"
         checkout scm
