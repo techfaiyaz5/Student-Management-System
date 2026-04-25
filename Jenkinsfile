@@ -14,9 +14,17 @@ pipeline {
         stage('Step 1: Permission & System Fix') {
             steps {
                 echo 'Cleaning up old Docker artifacts...'
-                sh "docker system prune -f"
-                sh "docker rmi ${DOCKER_HUB_USER}/${APP_NAME}:latest || true"
-                checkout scm
+        
+        // --- YE LINES ADD KAREIN ---
+        sh "sudo chmod 666 /var/run/docker.sock"
+        sh "sudo chown -R jenkins:jenkins /home/ubuntu/.minikube"
+        sh "sudo chmod -R 777 /home/ubuntu/.minikube"
+        sh "sudo chmod -R 777 /home/ubuntu/.kube"
+        // ---------------------------
+
+        sh "docker system prune -f"
+        sh "docker rmi ${DOCKER_HUB_USER}/${APP_NAME}:latest || true"
+        checkout scm
             }
         }
 

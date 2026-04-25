@@ -64,7 +64,7 @@ HTML_PAGE = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Student Management System version 2</title>
+    <title>Student Management System version</title>
     <style>
         body { font-family: Arial; margin: 30px; background-color: #f4f4f4; }
         .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
