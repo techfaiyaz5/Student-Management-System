@@ -4,7 +4,7 @@ USE student_db;
 CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100),
-    -- Yahan UNIQUE add kiya hai taaki search/delete fast ho jaye
-    roll_no VARCHAR(50) UNIQUE, 
-    address TEXT
+    roll_no VARCHAR(50) UNIQUE,
+    address VARCHAR(255),
+    mobile_no VARCHAR(15)
 );
